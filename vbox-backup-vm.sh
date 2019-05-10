@@ -31,7 +31,7 @@ vbox discardstate "$SNAPSHOT" && \
 \
 echo "Export temporary VM $SNAPSHOT to $BACKUPFILE" && \
 vbox export "$SNAPSHOT" -o "$BACKUPFILE" \
-  --ovf10 --manifest && \
+  --ovf10 --manifest
 
 echo "Delete temporary VM $SNAPSHOT"
 vbox unregistervm "$SNAPSHOT" --delete

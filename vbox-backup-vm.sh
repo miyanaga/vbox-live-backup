@@ -5,27 +5,35 @@ BACKUPDIR=${2%/}
 
 SERIAL=`date "+%Y%m%d%H%M%S"`
 SNAPSHOT="$VM-backup-$SERIAL"
-CLONEDIR="$BACKUPDIR/$SERIAL"
 BACKUPFILE="$BACKUPDIR/$SNAPSHOT.ova"
 
 alias vbox="VBoxManage"
 
-echo "Take snapshot of $VM as $SNAPSHOT"
-vbox snapshot "$VM" take "$SNAPSHOT" --live
+RUNNING=`vbox showvminfo "$VM" --machinereadable | grep -c 'VMState="running"'`
 
-echo "Clone snapshot of $VM to temporary vm $SNAPSHOT on $CLONEDIR"
+if [ $RUNNING -ne 1 ]; then
+  echo "Try to export VM $VM to $BACKUPFILE"
+  vbox export "$VM" -o "$BACKUPFILE" \
+    --ovf10 --manifest
+  exit
+fi
+
+echo "Take snapshot of $VM as $SNAPSHOT"
+vbox snapshot "$VM" take "$SNAPSHOT" --live && \
+\
+echo "Clone snapshot of $VM to temporary VM $SNAPSHOT on $CLONEDIR" && \
 vbox clonevm "$VM" --snapshot "$SNAPSHOT" \
   --mode machine --options keepallmacs \
-  --name "$SNAPSHOT" --basefolder "$CLONEDIR" --register
-
-echo "Discard state of temporary vm $SNAPSHOT"
-vbox discardstate "$SNAPSHOT"
-
-echo "Export temporary vm $SNAPSHOT to $BACKUPFILE"
+  --name "$SNAPSHOT" --basefolder "$CLONEDIR" --register && \
+\
+echo "Discard state of temporary VM $SNAPSHOT" && \
+vbox discardstate "$SNAPSHOT" && \
+\
+echo "Export temporary VM $SNAPSHOT to $BACKUPFILE" && \
 vbox export "$SNAPSHOT" -o "$BACKUPFILE" \
-  --ovf10 --manifest
+  --ovf10 --manifest && \
 
-echo "Delete temporary vm $SNAPSHOT"
+echo "Delete temporary VM $SNAPSHOT"
 vbox unregistervm "$SNAPSHOT" --delete
 
 echo "Delete snapshot $SNAPSHOT"
